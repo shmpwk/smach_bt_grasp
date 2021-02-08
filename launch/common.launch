@@ -16,4 +16,8 @@
     <arg name="load_machine" value="true" />
   </include>
 
+  <node name="grasp" pkg="grasp_demo" type="action_server.py"/>
+  <node name="IKJudge" pkg="grasp_demo" type="condition_server.py"/>
+  <node name="test" pkg="behavior_tree_core" type="gtest_grasp_ros" />
+
 </launch>

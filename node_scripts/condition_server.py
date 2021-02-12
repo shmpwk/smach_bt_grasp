@@ -18,13 +18,15 @@ class BTAction(object):
     # helper variables
     r = rospy.Rate(1)
     rospy.loginfo('Checking Condition')
+    result = self._as.get_default_result()
+    print("reslt", result.status)
 
     print("goal is :", goal)
 
-    if goal:
-      self.set_status('FAILURE')
-    else : 
+    if result.status:
       self.set_status('SUCCESS')
+    else : 
+      self.set_status('FAILURE')
     
     rospy.loginfo('Executing checking')
 
@@ -49,6 +51,6 @@ class BTAction(object):
 
 
 if __name__ == '__main__':
-  rospy.init_node('GraspJudge')
+  rospy.init_node('IKJudge')
   BTAction(rospy.get_name())
   rospy.spin()

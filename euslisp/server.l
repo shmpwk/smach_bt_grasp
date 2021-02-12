@@ -1,0 +1,53 @@
+#! /usr/bin/env roseus
+
+(ros::load-ros-manifest "actionlib_msgs")
+(ros::load-ros-manifest "behavior_tree_core")
+(ros::roseus "grasp_server")
+(require "package://grasp_demo/euslisp/grasp_primitive.l")
+
+(defun judge-cb (server goal)
+  (print "pregrasp start")
+  (pr2-pregrasp-pose)                   
+  (setq input (send goal :goal :parameter))
+  (setq fmsg (send server :feedback :status 1))
+  (send server :publish-feedback fmsg)
+  (setq msg (send server :result :status 1))
+  (send server :set-succeeded msg)
+  (unix:sleep 1)
+  (print "pregrasp end")                   
+)
+
+(defun grasp-cb (server goal)
+  (print "grasp start")
+  (grasp-target-callback)                   
+  (setq input (send goal :goal :parameter))
+  (setq fmsg (send server :feedback :status 1))
+  (send server :publish-feedback fmsg)
+  (setq msg (send server :result :status 1))
+  (send server :set-succeeded msg)
+  (unix:sleep 1)
+  (print "grasp end")                   
+)
+(defun bt-pregrasp ()
+  ;;(setq *pregrasp* (instance ros::simple-action-server :init "pregrasp" behavior_tree_core::BTAction :execute-cb 'pr2-pregrasp-pose))
+  (setq *pregrasp* (instance ros::simple-action-server :init "pregrasp" behavior_tree_core::BTAction :execute-cb 'judge-cb))
+  (print "pregrasp!!")                   
+)
+(defun bt-grasp ()
+  (setq *grasp* (instance ros::simple-action-server :init "grasp" behavior_tree_core::BTAction :execute-cb 'grasp-cb))
+  ;;(setq *req* (instance ros::simple-action-server :init "grasp" behavior_tree_core::BTAction :execute-cb 'judge-cb))
+  (print "grasp!!")                   
+)
+
+(bt-pregrasp)
+(bt-grasp)
+
+(do-until-key
+  (send *pregrasp* :worker)
+  (send *grasp* :worker)
+;;  (ros::spin)  
+  (ros::spin-once)
+  (ros::sleep)
+)
+
+

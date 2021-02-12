@@ -20,8 +20,9 @@ class BTAction(object):
     rospy.loginfo('Action executed')
 
     print("goal is :", goal)
+    para = 0 #0
 
-    if goal:
+    if para:
       self.set_status('FAILURE')
     else : 
       self.set_status('SUCCESS')
@@ -30,7 +31,6 @@ class BTAction(object):
 
     # this step is not necessary, the sequence is computed at 1 Hz for demonstration purposes
     r.sleep()
-      
 
   def set_status(self,status):
       if status == 'SUCCESS':
@@ -45,8 +45,6 @@ class BTAction(object):
         self._as.set_succeeded(self._result)
       else:
         rospy.logerr('Action %s: has a wrong return status' % self._action_name)
-
-
 
 if __name__ == '__main__':
   rospy.init_node('grasp')

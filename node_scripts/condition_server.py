@@ -51,6 +51,6 @@ class BTAction(object):
 
 
 if __name__ == '__main__':
-  rospy.init_node('IKJudge')
+  rospy.init_node('grasp_judge')
   BTAction(rospy.get_name())
   rospy.spin()

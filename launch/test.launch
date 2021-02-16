@@ -1,3 +1,5 @@
 <launch>
   <node name="grasp" pkg="grasp_demo" type="server.l"/>
+  <node name="IKJudge" pkg="grasp_demo" type="condition_server.py"/>
+  <node name="test" pkg="behavior_tree_core" type="gtest_grasp_ros" />
 </launch>

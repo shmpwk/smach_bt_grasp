@@ -127,8 +127,10 @@
 	(progn
 	  (send *pr2* *rarm* :inverse-kinematics
 		(make-coords :pos (v+ (send target-obj :worldpos)
-				       (float-vector 0 (- (/ (car *d_xyz*) -2) 10) 30))
-			     :rpy #f(1.54 1.37 -1.54))
+				       ;;(float-vector 0 (- (/ (car *d_xyz*) -2) 10) 30)
+                                      (float-vector -120 0 0))
+			     ;;:rpy #f(1.54 1.37 -1.54))
+			     :rpy #f(0 0 0))
 		:rotation-axis :t))
       (publish-error "out of reach...")
       (return-from grasp-target-callback nil))
@@ -138,13 +140,14 @@
     (setq *grasp-state* "gripper-opening")
     (publish-grasp-state)
     (send *ri* :stop-grasp *rarm* :wait t)
-    (send *ri* :angle-vector (send *pr2* :angle-vector) 6000)
+    (send *ri* :angle-vector (send *pr2* :angle-vector) 3000)
     (send *ri* :wait-interpolation)
    
     (setq *grasp-state* "grasp-approaching")
     (publish-grasp-state)
     (publish-info "reaching...")
-    (send *pr2* *rarm* :move-end-pos #f(0 10 -24) :world)
+    ;;(send *pr2* *rarm* :move-end-pos #f(0 10 -24) :world)
+    (send *pr2* *rarm* :move-end-pos #f(160 0 0) :world)
     (send *ri* :angle-vector (send *pr2* :angle-vector) 6000)
     (send *ri* :wait-interpolation)
 

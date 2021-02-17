@@ -5,7 +5,8 @@
   <!-- load scene in gazebo -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <arg name="gui" value="$(arg gui)" />
-    <arg name="world_name" value="$(find grasp_demo)/world/tabletop.world" />
+    <!--arg name="world_name" value="$(find grasp_demo)/world/tabletop.world" /-->
+    <arg name="world_name" value="$(find grasp_demo)/world/tabletop_can.world" />
     <arg name="physics" value="$(arg physics)" />
   </include>
   <include file="$(find pr2_gazebo)/launch/pr2.launch">

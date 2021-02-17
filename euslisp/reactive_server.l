@@ -79,6 +79,17 @@
   (unix:sleep 1)
 )
 
+(defun moved-cb (server goal)
+  (print "moved")
+  (progn
+    (wait-for-grasp-target)    
+    (ros::spin-once)) 
+  (print "spin fin")       
+  (setq msg (send server :result :status *moved-status*))
+  (send server :set-succeeded msg)
+  (unix:sleep 1)
+)
+
 (defun bt-start ()
   (setq *start* (instance ros::simple-action-server :init "started" behavior_tree_core::BTAction :execute-cb 'start-cond-cb))
   (print "started!!")                   
@@ -97,7 +108,6 @@
 ;;  (setq *finish* (instance ros::simple-action-server :init "finish" behavior_tree_core::BTAction :execute-cb 'finish-cb))
 ;;  (print "finish!!")                   
 ;;)
-
 
 (defun bt-check ()
   (setq *check* (instance ros::simple-action-server :init "check_grasp" behavior_tree_core::BTAction :execute-cb 'check-grasp-cb))
@@ -119,10 +129,16 @@
   (print "place!!")                   
 )
 
+(defun bt-moved ()
+  (setq *moved* (instance ros::simple-action-server :init "moved" behavior_tree_core::BTAction :execute-cb 'moved-cb))
+  (print "moved!!")                   
+)
+
 (bt-start)
 (bt-init)
 (bt-grasp)
 (bt-check)
+(bt-moved)
 (bt-grasped)
 (bt-pick)
 (bt-post)
@@ -135,6 +151,7 @@
   (send *grasped* :worker)
   (send *pick* :worker)
   (send *post* :worker)
+  (send *moved* :worker)
 ;;  (ros::spin)  
   (ros::spin-once)
   (ros::sleep)

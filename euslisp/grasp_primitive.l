@@ -11,16 +11,15 @@
 (ros::roseus-add-msgs "geometry_msgs")
 (require "models/arrow-object.l")
 
-
 (ros::roseus "pr2_tabletop_object_grasp_node")
 (ros::rate 10)
 
 (require :pr2-interface "package://pr2eus/pr2-interface.l")
 
 (defun start-cond (&rest args)
-  (setq *grasp-state* "start_check!")               
+  (setq *grasp-state* "start check!")               
   (publish-grasp-state)
-  (publish-info "start_check!")                   
+  (publish-info "start check!")                   
   )
 
 (defun pr2-pregrasp-pose (&rest args)
@@ -105,6 +104,25 @@
                   :transform cds)))
     )
   )
+(defun moved-callback (msg)
+   (unless msg
+     (ros::ros-logger "target point is nil")
+     (return-from moved-callback nil))
+   (setq *target-obj* (bounding-box->cube (elt (send msg :boxes) 0)))
+    (unless *target-obj*
+      (ros::ros-logerr "target point is nil !!")
+      (return-from grasp-target-callback nil))
+    (unless *grasping-object-p*
+        (progn
+          (setq *pre-target-obj* *target-obj*))
+      (setq *grasping-object-p* t))
+    (setq delta-move (v- (send *target-obj* :worldpos)
+                         (send *pre-target-obj* :worldpos)))
+    (if (> (norm delta-move) 5)
+      (setq *moved-status* 1)
+      (setq *moved-status* 2))
+    (setq *pre-target-obj* *target-obj*)
+)
 
 ;;(defun grasp-target-callback (msg)
 (defun grasp-target-callback (&rest args)
@@ -112,8 +130,9 @@
                   jsk_recognition_msgs::BoundingBoxArray
                   :timeout 10000))
   (print "clicked")
-  (let ((target-obj (bounding-box->cube (elt (send msg :boxes) 0))))
-    (unless target-obj
+  ;;(let ((target-obj (bounding-box->cube (elt (send msg :boxes) 0))))
+  ;;(let ((target-obj *target-obj*))
+    (unless *target-obj*
       (ros::ros-logerr "target point is nil !!")
       (return-from grasp-target-callback nil))
     (if *grasping-object-p*
@@ -126,11 +145,11 @@
     (unless
 	(progn
 	  (send *pr2* *rarm* :inverse-kinematics
-		(make-coords :pos (v+ (send target-obj :worldpos)
+		(make-coords :pos (v+ (send *target-obj* :worldpos)
 				       ;;(float-vector 0 (- (/ (car *d_xyz*) -2) 10) 30)
-                                      (float-vector -120 0 0))
+                                      (float-vector 0 -120 0))
 			     ;;:rpy #f(1.54 1.37 -1.54))
-			     :rpy #f(0 0 0))
+			     :rpy #f(1.54 0 0))
 		:rotation-axis :t))
       (publish-error "out of reach...")
       (return-from grasp-target-callback nil))
@@ -147,8 +166,8 @@
     (publish-grasp-state)
     (publish-info "reaching...")
     ;;(send *pr2* *rarm* :move-end-pos #f(0 10 -24) :world)
-    (send *pr2* *rarm* :move-end-pos #f(160 0 0) :world)
-    (send *ri* :angle-vector (send *pr2* :angle-vector) 6000)
+    (send *pr2* *rarm* :move-end-pos #f(0 140 0) :world)
+    (send *ri* :angle-vector (send *pr2* :angle-vector) 3000)
     (send *ri* :wait-interpolation)
 
     (setq *grasp-state* "grasp-closing")
@@ -164,7 +183,7 @@
         (publish-info "back to pre grasp...")
         (pr2-pregrasp-pose)
         (return-from grasp-target-callback nil)))
-      )
+    ;;  )
 )
   
 (defun pick (&rest args)
@@ -222,25 +241,26 @@
     (publish-info "click tabletop object!")
   )
 
-;;(defun wait-for-grasp-target ()
-;;  (ros::subscribe *grasp-target-bounding-box-topic*
-;;                  jsk_recognition_msgs::BoundingBox #'grasp-target-callback)
-;;  (publish-info "click tabletop object!")
-;;  )
+(defun wait-for-grasp-target (&rest args)
+  (ros::subscribe *grasp-bbox*
+                  jsk_recognition_msgs::BoundingBoxArray #'moved-callback)
+  (publish-info "click tabletop object!")
+  (setq *moved-status* 2)
+)
 
 (defun publish-grasp-state ()
   (ros::publish "grasp_state" (instance std_msgs::String :init :data *grasp-state*))) ;change from "/grasp_state" to "grasp_state"
-  (setq *grasping-object-p* nil)
-  (setq *rarm* :rarm)
-  (setq *tfl* (instance ros::transform-listener :init))
-  (setq *tfb* (instance ros::transform-broadcaster :init))
-  (ros::advertise "/grasp_state" std_msgs::String 1)
-  (setq *grasp-state* "waiting")
-  (pr2-init)
+(setq *grasping-object-p* nil)
+(setq *rarm* :rarm)
+(setq *tfl* (instance ros::transform-listener :init))
+(setq *tfb* (instance ros::transform-broadcaster :init))
+(ros::advertise "/grasp_state" std_msgs::String 1)
+(setq *grasp-state* "waiting")
+(pr2-init)
 
 
 ;;(wait-for-grasp-target)
-;;(defun demo ()
+;(defun demo ()
 ;;  (pr2-pregrasp-pose)
 ;;  ;;(wait-for-grasp-target)
 ;;  (ros::spin))

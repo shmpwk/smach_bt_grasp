@@ -6,6 +6,7 @@
 (defvar *grasp-status-topic* "/tabletop_object_grasp_status")
 (defvar *base-frame-id* "/base_footprint")
 (defvar *start-cond* 2)
+(defvar *target-obj* nil)
 (ros::load-ros-manifest "jsk_recognition_msgs")
 (ros::load-ros-manifest "jsk_rviz_plugins")
 (ros::roseus-add-msgs "geometry_msgs")
@@ -41,6 +42,8 @@
   (setq *start-cond* 1)
   t)
 (defun finish-grasped (&rest args)
+  (print "finish grasped?")
+  (print *finish-grasped*)          
   (return-from finish-grasped *finish-grasped*))
   
 
@@ -106,11 +109,11 @@
   )
 (defun moved-callback (msg)
    (unless msg
-     (ros::ros-logger "target point is nil")
+     (publish-info "target point is nil")
      (return-from moved-callback nil))
    (setq *target-obj* (bounding-box->cube (elt (send msg :boxes) 0)))
     (unless *target-obj*
-      (ros::ros-logerr "target point is nil !!")
+      (publish-info "target point is nil")
       (return-from grasp-target-callback nil))
     (unless *grasping-object-p*
         (progn
@@ -130,10 +133,12 @@
                   jsk_recognition_msgs::BoundingBoxArray
                   :timeout 10000))
   (print "clicked")
+  (setq *target-obj* (bounding-box->cube (elt (send msg :boxes) 0)))
+
   ;;(let ((target-obj (bounding-box->cube (elt (send msg :boxes) 0))))
   ;;(let ((target-obj *target-obj*))
     (unless *target-obj*
-      (ros::ros-logerr "target point is nil !!")
+      (publish-info "target point is nil")
       (return-from grasp-target-callback nil))
     (if *grasping-object-p*
         (progn
@@ -159,15 +164,15 @@
     (setq *grasp-state* "gripper-opening")
     (publish-grasp-state)
     (send *ri* :stop-grasp *rarm* :wait t)
-    (send *ri* :angle-vector (send *pr2* :angle-vector) 3000)
+    (send *ri* :angle-vector (send *pr2* :angle-vector) 1000)
     (send *ri* :wait-interpolation)
    
     (setq *grasp-state* "grasp-approaching")
     (publish-grasp-state)
     (publish-info "reaching...")
     ;;(send *pr2* *rarm* :move-end-pos #f(0 10 -24) :world)
-    (send *pr2* *rarm* :move-end-pos #f(0 140 0) :world)
-    (send *ri* :angle-vector (send *pr2* :angle-vector) 3000)
+    (send *pr2* *rarm* :move-end-pos #f(0 135 0) :world)
+    (send *ri* :angle-vector (send *pr2* :angle-vector) 2000)
     (send *ri* :wait-interpolation)
 
     (setq *grasp-state* "grasp-closing")
@@ -177,13 +182,14 @@
       (send *ri* :wait-interpolation)
       (unix:sleep 3)
       (print grasp-result)
-      (unless (< 0.1 grasp-result)
+      (unless (< 1 grasp-result)
         (publish-error "failed to grasp ~A" grasp-result)
         (send *ri* :stop-grasp *rarm* :wait t)
         (publish-info "back to pre grasp...")
         (pr2-pregrasp-pose)
         (return-from grasp-target-callback nil)))
     ;;  )
+   t
 )
   
 (defun pick (&rest args)
@@ -191,30 +197,29 @@
     (publish-grasp-state)
     (publish-info "picking up...")
     (send *pr2* *rarm* :move-end-pos #f(0 0 250) :world)
-    (send *ri* :angle-vector (send *pr2* :angle-vector) 2000)
+    (send *ri* :angle-vector (send *pr2* :angle-vector) 1000)
     (send *ri* :wait-interpolation)
     (setq *finish-grasped* 1)
+    t
 )
 
 (defun check-grasp-cond (&rest args)
     (let ((grasp-result (send *ri* :start-grasp *rarm*)))
       (send *ri* :wait-interpolation)
       (print grasp-result)
-      (if (< 0.1 grasp-result)   ;;for gazebo (< 0.1 grasp-result)                          
+      (if (< 1 grasp-result)   ;;for gazebo (< 0.1 grasp-result)                          
         (progn                                                     
-          (setq *grasp-state* "already grasped!")               
+          (setq *grasp-state* "gripper width is greater than 0!")               
           (publish-grasp-state)
-          (publish-info "already grasped!")                   
-          (ros::set-param (format nil "~/judge_grasp_success") 1)
+          (publish-info "gripper width is greater than 0!")                   
           (setq *check-grasp* 1)
           ;;(return-from grasp-target-callback t))
           )
         (progn                                          
-          (setq *grasp-state* "yet to be grasped!")      
+          (setq *grasp-state* "gripper width is almost 0!")      
           (publish-grasp-state)
-          (publish-info "yet to be grasped!")          
-          (ros::set-param (format nil "~/judge_grasp_success") 2)
-          (setq *check-grasp* 0)
+          (publish-info "gripper width is almost 0")          
+          (setq *check-grasp* 2)
           ;;(return-from grasp-target-callback nil))
           )))
 )
@@ -239,6 +244,7 @@
     (publish-grasp-state)
     (pr2-pregrasp-pose)
     (publish-info "click tabletop object!")
+    t
   )
 
 (defun wait-for-grasp-target (&rest args)

@@ -15,6 +15,7 @@
     <arg name="machine" value="localhost" />
     <arg name="load_machine" value="true" />
   </include>
+  <node name="move_check" pkg="grasp_demo" type="move_check.py"/>
   <!--
   <group ns="b_t">
     <node name="grasp" pkg="grasp_demo" type="server.l"/>

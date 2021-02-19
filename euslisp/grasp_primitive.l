@@ -37,8 +37,6 @@
   (setq *box-arrow* (arrow))
   (setq *finish-grasped* 2)
   (objects (list *co-endeffector-vis* *co-ik-target* *pr2*))
-  ;;(setq *co-target-vis* (arrow))
-  ;;(objects (list *pr2* *co-endeffector-vis*))
   (setq *start-cond* 1)
   t)
 (defun finish-grasped (&rest args)
@@ -107,6 +105,7 @@
                   :transform cds)))
     )
   )
+
 (defun moved-callback (msg)
    (unless msg
      (publish-info "target point is nil")
@@ -118,11 +117,20 @@
     (unless *grasping-object-p*
         (progn
           (setq *pre-target-obj* *target-obj*))
+          (setq *buf* (float-vector 0 0 0))
       (setq *grasping-object-p* t))
     (setq delta-move (v- (send *target-obj* :worldpos)
                          (send *pre-target-obj* :worldpos)))
-    (if (> (norm delta-move) 5)
-      (setq *moved-status* 1)
+    (setq *buf* (v+ *buf* delta-move))  
+    (print "delta-move")
+    (print delta-move)
+    (print "buf")
+    (print (norm *buf*))
+    
+    (if (> (norm *buf*) 5)
+      (progn
+         (setq *moved-status* 1)
+         (setq *buf* (float-vector 0 0 0)))
       (setq *moved-status* 2))
     (setq *pre-target-obj* *target-obj*)
 )
@@ -131,7 +139,7 @@
 (defun grasp-target-callback (&rest args)
   (setq msg (one-shot-subscribe *grasp-bbox*
                   jsk_recognition_msgs::BoundingBoxArray
-                  :timeout 10000))
+                  :timeout 1000000))
   (print "clicked")
   (setq *target-obj* (bounding-box->cube (elt (send msg :boxes) 0)))
 
@@ -166,48 +174,41 @@
     (send *ri* :stop-grasp *rarm* :wait t)
     (send *ri* :angle-vector (send *pr2* :angle-vector) 1000)
     (send *ri* :wait-interpolation)
-   
     (setq *grasp-state* "grasp-approaching")
     (publish-grasp-state)
     (publish-info "reaching...")
     ;;(send *pr2* *rarm* :move-end-pos #f(0 10 -24) :world)
-    (send *pr2* *rarm* :move-end-pos #f(0 135 0) :world)
+    (send *pr2* *rarm* :move-end-pos #f(0 140 0) :world)
     (send *ri* :angle-vector (send *pr2* :angle-vector) 2000)
     (send *ri* :wait-interpolation)
+  1
+)
 
+(defun reaching-grip (&rest args)   
     (setq *grasp-state* "grasp-closing")
     (publish-grasp-state)
     (publish-info "grasping...")
+    (send *ri* :start-grasp *rarm*)
+    (send *ri* :wait-interpolation)
     (let ((grasp-result (send *ri* :start-grasp *rarm* )))
       (send *ri* :wait-interpolation)
-      (unix:sleep 3)
       (print grasp-result)
       (unless (< 1 grasp-result)
         (publish-error "failed to grasp ~A" grasp-result)
         (send *ri* :stop-grasp *rarm* :wait t)
         (publish-info "back to pre grasp...")
-        (pr2-pregrasp-pose)
-        (return-from grasp-target-callback nil)))
+        ;;(pr2-pregrasp-pose)
+        (return-from reaching-grip nil)))
     ;;  )
    t
 )
-  
-(defun pick (&rest args)
-    (setq *grasp-state* "picking")
-    (publish-grasp-state)
-    (publish-info "picking up...")
-    (send *pr2* *rarm* :move-end-pos #f(0 0 250) :world)
-    (send *ri* :angle-vector (send *pr2* :angle-vector) 1000)
-    (send *ri* :wait-interpolation)
-    (setq *finish-grasped* 1)
-    t
-)
-
 (defun check-grasp-cond (&rest args)
+    (send *ri* :start-grasp *rarm*)
+    (send *ri* :wait-interpolation)
     (let ((grasp-result (send *ri* :start-grasp *rarm*)))
       (send *ri* :wait-interpolation)
       (print grasp-result)
-      (if (< 1 grasp-result)   ;;for gazebo (< 0.1 grasp-result)                          
+      (if (< 5 grasp-result)   ;;for gazebo (< 0.1 grasp-result)                          
         (progn                                                     
           (setq *grasp-state* "gripper width is greater than 0!")               
           (publish-grasp-state)
@@ -223,8 +224,20 @@
           ;;(return-from grasp-target-callback nil))
           )))
 )
+  
+(defun pick (&rest args)
+    (setq *grasp-state* "picking")
+    (publish-grasp-state)
+    (publish-info "picking up...")
+    (send *pr2* *rarm* :move-end-pos #f(0 0 250) :world)
+    (send *ri* :angle-vector (send *pr2* :angle-vector) 1000)
+    (send *ri* :wait-interpolation)
+    (setq *finish-grasped* 1)
+;;    t
+;;)
 
-(defun postgrasp (&rest args)    
+
+;;(defun postgrasp (&rest args)    
     (setq *grasp-state* "placing")
     (publish-grasp-state)
     (publish-info "placing ...")
@@ -242,7 +255,7 @@
     (publish-info "pre grasp pose")
     (setq *grasp-state* "returning")
     (publish-grasp-state)
-    (pr2-pregrasp-pose)
+    ;;(pr2-pregrasp-pose)
     (publish-info "click tabletop object!")
     t
   )

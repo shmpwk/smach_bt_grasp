@@ -7,7 +7,7 @@ This is
 
 ```
 $ mkdir -p ~/YOUR_WORKSPACE/src
-$ cd ~/YOU_WORKSPACE
+$ cd ~/YOUR_WORKSPACE
 $ catkin init
 $ pip install scikit-robot[all] #https://github.com/iory/scikit-robot
 $ sudo apt install ros-kinetic-pr2* #Install PR2 packages.
@@ -25,6 +25,7 @@ Maybe more library should be installed...
 
 
 ## smach example (grasp a can)
+Based on https://github.com/jsk-ros-pkg/jsk_roseus/tree/master/roseus_smach
 ```
 $ roslaunch grasp_demo common.launch
 $ rosrun grasp_demo state-machine-ros.l #After that command `(exec-smach)`
@@ -34,7 +35,7 @@ $ rosrun smach_viewer smach_viewer.py
 
  
 ## behavior tree example (grasp a can)
-
+Based on https://github.com/miccol/ROS-Behavior-Tree
 First, you should build behavior_tree_core package.
 On each terminal and after `source ~/YOUR_WORKSPACE/devel/setup.bash`,
 ```
@@ -50,6 +51,5 @@ Then behavior Tree show up, and the robot automatically grasps can.
 
 
 ## contact
-
 For more infomation, please contact me.
 wakabayashi-shumpei@g.ecc.u-tokyo.ac.jp

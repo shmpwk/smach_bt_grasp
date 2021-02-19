@@ -135,7 +135,6 @@
     (setq *pre-target-obj* *target-obj*)
 )
 
-;;(defun grasp-target-callback (msg)
 (defun grasp-target-callback (&rest args)
   (setq msg (one-shot-subscribe *grasp-bbox*
                   jsk_recognition_msgs::BoundingBoxArray
@@ -143,8 +142,6 @@
   (print "clicked")
   (setq *target-obj* (bounding-box->cube (elt (send msg :boxes) 0)))
 
-  ;;(let ((target-obj (bounding-box->cube (elt (send msg :boxes) 0))))
-  ;;(let ((target-obj *target-obj*))
     (unless *target-obj*
       (publish-info "target point is nil")
       (return-from grasp-target-callback nil))
@@ -181,7 +178,7 @@
     (send *pr2* *rarm* :move-end-pos #f(0 140 0) :world)
     (send *ri* :angle-vector (send *pr2* :angle-vector) 2000)
     (send *ri* :wait-interpolation)
-  1
+ t 
 )
 
 (defun reaching-grip (&rest args)   
@@ -197,9 +194,7 @@
         (publish-error "failed to grasp ~A" grasp-result)
         (send *ri* :stop-grasp *rarm* :wait t)
         (publish-info "back to pre grasp...")
-        ;;(pr2-pregrasp-pose)
         (return-from reaching-grip nil)))
-    ;;  )
    t
 )
 (defun check-grasp-cond (&rest args)

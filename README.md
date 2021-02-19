@@ -1,7 +1,5 @@
 # Grasp Demo
 
-This is 
-
 
 ## Initial Setup
 

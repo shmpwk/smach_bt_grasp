@@ -50,7 +50,7 @@ Then behavior Tree show up, and the robot automatically grasps can.
 
 ## contact
 For more infomation, please contact me.
-wakabayashi-shumpei@g.ecc.u-tokyo.ac.jp
+wakabayashi@jsk.imi.i.u-tokyo.ac.jp
 
 
 If you want to try python robot instead of euslisp, try [scikit robot](https://github.com/iory/scikit-robot)!
